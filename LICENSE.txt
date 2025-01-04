@@ -1,8 +1,35 @@
 ÖZEL LİSANS
 
-Copyright (c) 2024 ShadowCoder
+© 2024 ShadowCoder - TÜM HAKLARI SAKLIDIR
 
 Bu yazılım ve ilişkili dokümantasyon dosyaları ("Yazılım") aşağıdaki koşullarla sınırlıdır:
+
+ÖNEMLİ UYARI:
+Bu yazılımı indirmeniz, kurmanız veya kullanmanız durumunda aşağıdaki lisans 
+koşullarını kabul etmiş sayılırsınız. Eğer bu koşulları kabul etmiyorsanız, 
+yazılımı kullanmayınız ve sisteminizdeki tüm kopyalarını siliniz.
+
+YASAL KULLANIM ÇERÇEVESI:
+1. Bu yazılım sadece yasal ve meşru amaçlar için kullanılabilir.
+
+2. Kesinlikle yasaktır:
+   - Her türlü yasa dışı faaliyet
+   - Zararlı yazılım geliştirme
+   - Kötü amaçlı kullanım
+   - Başkalarına zarar verme
+   - Sistem güvenliğini tehdit etme
+   - Veri gizliliğini ihlal etme
+
+3. Kullanıcı, yazılımı:
+   - Yürürlükteki tüm yasalara uygun şekilde
+   - Etik kurallar çerçevesinde
+   - İyi niyet prensibiyle
+   kullanmayı kabul eder.
+
+4. Yasa dışı kullanım tespit edilirse:
+   - Kullanım hakkı derhal sona erer
+   - Yasal işlem başlatılabilir
+   - İlgili makamlara bildirim yapılabilir
 
 İZİN VERİLENLER:
 1. Yazılımı kişisel kullanım için çalıştırma
@@ -15,10 +42,43 @@ YASAKLAR:
 3. Yazılımın ticari amaçlı kullanımı
 4. Kodların başka projelerde kullanılması
 5. Yazılımın yeniden dağıtılması
+6. Her türlü yasa dışı kullanım
 
 SORUMLULUK REDDİ:
-YAZILIM "OLDUĞU GİBİ" SUNULMUŞTUR, HERHANGİ BİR GARANTİ VERİLMEMEKTEDİR.
-YAZILIMIN KULLANIMINDAN DOĞABİLECEK HERHANGİ BİR ZARARDAN YAZILIMIN 
-GELİŞTİRİCİLERİ SORUMLU TUTULAMAZ.
+1. Bu yazılım "olduğu gibi" sunulmuştur, hiçbir garanti verilmemektedir.
+
+2. Yazılımın kullanımından doğabilecek hiçbir maddi, manevi, hukuki veya 
+   teknik zarardan yazılımın geliştiricileri sorumlu tutulamaz.
+
+3. Kullanıcı, yazılımı kendi sorumluluğu altında kullanmayı kabul eder.
+
+4. Yazılımın kullanımı sırasında:
+   - Veri kayıpları
+   - Sistem sorunları
+   - Donanım sorunları
+   - Üçüncü taraf yazılımlarla uyumsuzluklar
+   - Diğer her türlü sorun
+   için geliştirici sorumlu tutulamaz.
+
+5. Yazılımın kullanımından doğabilecek herhangi bir yasal işlemde geliştirici 
+   taraf olmayacaktır ve sorumluluk kabul etmemektedir.
+
+6. Yasa dışı kullanımdan doğacak tüm sorumluluk kullanıcıya aittir.
+
+KULLANIM KABULÜ:
+1. Bu yazılımı kullanarak yukarıdaki tüm maddeleri okuduğunuzu ve kabul 
+   ettiğinizi beyan etmiş olursunuz.
+
+2. Yazılımı çalıştırdığınız andan itibaren bu lisans sözleşmesini kabul 
+   etmiş sayılırsınız.
+
+3. Bu lisans şartlarına uymamanız durumunda yazılımı kullanma hakkınız 
+   otomatik olarak sonlanacaktır.
+
+YASAL UYARI:
+Bu lisans kapsamında belirtilen haklar dışında yazılımın kullanımı, 
+kopyalanması veya değiştirilmesi Türk Ceza Kanunu, Fikir ve Sanat 
+Eserleri Kanunu ve diğer ilgili mevzuat kapsamında hukuki ve cezai 
+yaptırımlara tabi olabilir.
 
 TÜM HAKLARI SAKLIDIR © 2024 ShadowCoder
