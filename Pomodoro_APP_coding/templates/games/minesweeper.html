@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container game-container">
+    <div class="game-sidebar">
+        <h4>Mayın Tarlası</h4>
+        <div class="game-info">
+            <div class="info-item">
+                <span class="info-label">Puan:</span>
+                <span id="currentScore" class="info-value">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">En Yüksek:</span>
+                <span id="highScore" class="info-value">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Mayın:</span>
+                <span id="mineCount" class="info-value">10</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Süre:</span>
+                <span id="time" class="info-value">0:00</span>
+            </div>
+        </div>
+        
+        <div class="difficulty-buttons">
+            <button class="btn btn-outline-primary btn-sm" onclick="setDifficulty('easy')">Kolay</button>
+            <button class="btn btn-outline-primary btn-sm" onclick="setDifficulty('medium')">Orta</button>
+            <button class="btn btn-outline-primary btn-sm" onclick="setDifficulty('hard')">Zor</button>
+        </div>
+    </div>
+
+    <div class="minesweeper-game">
+        <div id="gameBoard"></div>
+    </div>
+</div>
+
+<style>
+.game-container {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    padding-top: 20px;
+}
+
+.game-sidebar {
+    width: 200px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.game-info {
+    margin: 15px 0;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.info-label {
+    color: #666;
+}
+
+.info-value {
+    font-weight: bold;
+}
+
+.difficulty-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.difficulty-buttons .btn {
+    width: 100%;
+}
+
+.minesweeper-game {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#gameBoard {
+    display: grid;
+    gap: 1px;
+    background: #ccc;
+    padding: 1px;
+    border: 2px solid #999;
+    margin: 0 auto;
+}
+
+.cell {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid #999;
+    transition: all 0.2s;
+}
+
+.cell.hidden {
+    background: #bdbdbd;
+}
+
+.cell.hidden:hover {
+    background: #a5a5a5;
+}
+
+.cell.revealed {
+    background: #fff;
+}
+
+.cell.mine {
+    background: #f44336;
+    color: white;
+}
+
+.cell.flagged {
+    background: #4caf50;
+    color: white;
+}
+
+/* Sayı renkleri */
+.cell[data-number="1"] { color: #2196F3; }
+.cell[data-number="2"] { color: #4CAF50; }
+.cell[data-number="3"] { color: #F44336; }
+.cell[data-number="4"] { color: #673AB7; }
+.cell[data-number="5"] { color: #795548; }
+.cell[data-number="6"] { color: #009688; }
+.cell[data-number="7"] { color: #000000; }
+.cell[data-number="8"] { color: #757575; }
+
+.minesweeper-preview {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+}
+</style>
+
+<script>
+class Minesweeper {
+    constructor(difficulty = 'easy') {
+        this.difficulties = {
+            easy: { rows: 8, cols: 8, mines: 10 },
+            medium: { rows: 12, cols: 12, mines: 20 },
+            hard: { rows: 16, cols: 16, mines: 40 }
+        };
+        this.setDifficulty(difficulty);
+        this.score = 0;
+        this.loadHighScore();
+    }
+
+    setDifficulty(difficulty) {
+        const config = this.difficulties[difficulty];
+        this.rows = config.rows;
+        this.cols = config.cols;
+        this.mineCount = config.mines;
+        this.init();
+    }
+
+    init() {
+        this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
+        this.revealed = Array(this.rows).fill().map(() => Array(this.cols).fill(false));
+        this.flagged = Array(this.rows).fill().map(() => Array(this.cols).fill(false));
+        this.gameOver = false;
+        this.firstClick = true;
+        this.startTime = null;
+        if (this.timer) {
+            clearInterval(this.timer);
+        }
+        this.timer = null;
+        this.remainingMines = this.mineCount;
+        
+        this.updateDisplay();
+        this.createBoard();
+        this.score = 0;
+        document.getElementById('currentScore').textContent = '0';
+        this.loadHighScore();
+    }
+
+    createBoard() {
+        const gameBoard = document.getElementById('gameBoard');
+        gameBoard.style.gridTemplateColumns = `repeat(${this.cols}, 30px)`;
+        gameBoard.innerHTML = '';
+
+        for (let i = 0; i < this.rows; i++) {
+            for (let j = 0; j < this.cols; j++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.row = i;
+                cell.dataset.col = j;
+                cell.addEventListener('click', (e) => this.handleClick(i, j));
+                cell.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    this.handleRightClick(i, j);
+                });
+                gameBoard.appendChild(cell);
+            }
+        }
+    }
+
+    placeMines(firstRow, firstCol) {
+        let minesPlaced = 0;
+        while (minesPlaced < this.mineCount) {
+            const row = Math.floor(Math.random() * this.rows);
+            const col = Math.floor(Math.random() * this.cols);
+            
+            if (this.board[row][col] !== -1 && 
+                (row !== firstRow || col !== firstCol) &&
+                Math.abs(row - firstRow) > 1 || Math.abs(col - firstCol) > 1) {
+                this.board[row][col] = -1;
+                minesPlaced++;
+            }
+        }
+
+        // Sayıları hesapla
+        for (let i = 0; i < this.rows; i++) {
+            for (let j = 0; j < this.cols; j++) {
+                if (this.board[i][j] !== -1) {
+                    this.board[i][j] = this.countAdjacentMines(i, j);
+                }
+            }
+        }
+    }
+
+    countAdjacentMines(row, col) {
+        let count = 0;
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                const newRow = row + i;
+                const newCol = col + j;
+                if (newRow >= 0 && newRow < this.rows && 
+                    newCol >= 0 && newCol < this.cols && 
+                    this.board[newRow][newCol] === -1) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    handleClick(row, col) {
+        if (this.gameOver || this.flagged[row][col]) return;
+
+        if (this.firstClick) {
+            this.firstClick = false;
+            this.placeMines(row, col);
+            this.startTimer();
+        }
+
+        if (this.board[row][col] === -1) {
+            this.gameOver = true;
+            this.revealAll();
+            clearInterval(this.timer);
+            
+            const finalScore = Math.floor(this.score * 0.5);
+            this.updateScore(0);
+            this.saveScore(finalScore);
+            
+            setTimeout(() => {
+                alert(`Oyun Bitti! Puanınız: ${finalScore}`);
+            }, 100);
+            return;
+        }
+
+        const revealed = this.reveal(row, col);
+        if (revealed > 0) {
+            const points = revealed * 10;
+            this.updateScore(points);
+        }
+
+        if (this.checkWin()) {
+            this.gameOver = true;
+            clearInterval(this.timer);
+            
+            const timeBonus = Math.max(0, 1000 - parseInt(document.getElementById('time').textContent) * 10);
+            const finalScore = this.score + timeBonus;
+            this.updateScore(timeBonus);
+            this.saveScore(finalScore);
+            
+            setTimeout(() => {
+                alert(`Tebrikler! Kazandınız!\nPuanınız: ${finalScore}\nZaman Bonusu: ${timeBonus}`);
+            }, 100);
+        }
+    }
+
+    handleRightClick(row, col) {
+        if (this.gameOver || this.revealed[row][col]) return;
+
+        this.flagged[row][col] = !this.flagged[row][col];
+        this.remainingMines += this.flagged[row][col] ? -1 : 1;
+        this.updateDisplay();
+    }
+
+    reveal(row, col) {
+        if (row < 0 || row >= this.rows || 
+            col < 0 || col >= this.cols || 
+            this.revealed[row][col] || 
+            this.flagged[row][col]) return 0;
+
+        let revealedCount = 1;
+        this.revealed[row][col] = true;
+        this.updateDisplay();
+        
+        if (this.board[row][col] === 0) {
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    revealedCount += this.reveal(row + i, col + j);
+                }
+            }
+        }
+        
+        return revealedCount;
+    }
+
+    revealAll() {
+        for (let i = 0; i < this.rows; i++) {
+            for (let j = 0; j < this.cols; j++) {
+                this.revealed[i][j] = true;
+            }
+        }
+        this.updateDisplay();
+    }
+
+    updateDisplay() {
+        document.getElementById('mineCount').textContent = this.remainingMines;
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            
+            cell.className = 'cell';
+            
+            if (this.revealed[row][col]) {
+                cell.classList.add('revealed');
+                if (this.board[row][col] === -1) {
+                    cell.classList.add('mine');
+                    cell.textContent = '💣';
+                } else if (this.board[row][col] > 0) {
+                    cell.textContent = this.board[row][col];
+                    cell.dataset.number = this.board[row][col];
+                } else {
+                    cell.textContent = '';
+                }
+            } else if (this.flagged[row][col]) {
+                cell.classList.add('flagged');
+                cell.textContent = '🚩';
+            } else {
+                cell.textContent = '';
+                cell.classList.add('hidden');
+            }
+        });
+    }
+
+    checkWin() {
+        for (let i = 0; i < this.rows; i++) {
+            for (let j = 0; j < this.cols; j++) {
+                if (this.board[i][j] !== -1 && !this.revealed[i][j]) return false;
+            }
+        }
+        return true;
+    }
+
+    startTimer() {
+        this.startTime = Date.now();
+        this.timer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('time').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+
+    loadHighScore() {
+        const difficulty = Object.keys(this.difficulties).find(key => 
+            this.difficulties[key].rows === this.rows);
+        this.highScore = parseInt(localStorage.getItem(`minesweeper_${difficulty}_highscore`)) || 0;
+        document.getElementById('highScore').textContent = this.highScore;
+    }
+
+    updateScore(points) {
+        this.score += points;
+        document.getElementById('currentScore').textContent = this.score;
+    }
+
+    saveScore(finalScore) {
+        const difficulty = Object.keys(this.difficulties).find(key => 
+            this.difficulties[key].rows === this.rows);
+        
+        if (finalScore > this.highScore) {
+            this.highScore = finalScore;
+            localStorage.setItem(`minesweeper_${difficulty}_highscore`, finalScore);
+            document.getElementById('highScore').textContent = finalScore;
+        }
+    }
+}
+
+let game;
+
+function setDifficulty(difficulty) {
+    clearInterval(game.timer);
+    const gameBoard = document.getElementById('gameBoard');
+    gameBoard.innerHTML = '';
+    
+    game = new Minesweeper(difficulty);
+    
+    document.getElementById('time').textContent = '0:00';
+    document.getElementById('mineCount').textContent = game.mineCount;
+}
+
+// Oyunu başlat
+document.addEventListener('DOMContentLoaded', () => {
+    game = new Minesweeper('easy');
+    const bestTime = localStorage.getItem('minesweeperBestTime');
+    if (bestTime) {
+        document.getElementById('bestTime').textContent = bestTime;
+    }
+});
+</script>
+{% endblock %}

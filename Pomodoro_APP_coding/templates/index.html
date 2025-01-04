@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card timer-card">
+                <div class="card-body text-center">
+                    <h3 class="card-title mb-4">Hızlı Zamanlayıcı</h3>
+                    <div class="timer-preview">
+                        <h1 id="quickTimer" class="display-1 mb-4">25:00</h1>
+                        <div class="timer-controls">
+                            <button id="startStopBtn" class="btn btn-primary btn-lg me-2" onclick="toggleTimer()">
+                                <i class="fas fa-play me-2"></i>Başlat
+                            </button>
+                            <button class="btn btn-outline-light btn-lg" onclick="resetTimer()">
+                                <i class="fas fa-redo me-2"></i>Sıfırla
+                            </button>
+                        </div>
+                        <div class="timer-settings mt-3">
+                            <input type="number" id="customMinutes" class="form-control form-control-lg" 
+                                   min="1" max="60" value="25" onchange="updateCustomTime()">
+                            <label for="customMinutes" class="text-light mt-2">Dakika</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-3">Hızlı Erişim</h4>
+            <div class="quick-access-grid">
+                <a href="{{ url_for('tasks') }}" class="quick-link">
+                    <div class="quick-link-content">
+                        <i class="fas fa-tasks"></i>
+                        <span>Görevler</span>
+                        <small>Pomodoro görevlerinizi yönetin</small>
+                    </div>
+                </a>
+                
+                <a href="{{ url_for('games') }}" class="quick-link">
+                    <div class="quick-link-content">
+                        <i class="fas fa-gamepad"></i>
+                        <span>Oyunlar</span>
+                        <small>Mola zamanı eğlenin</small>
+                    </div>
+                </a>
+                
+                <a href="{{ url_for('settings') }}" class="quick-link">
+                    <div class="quick-link-content">
+                        <i class="fas fa-cog"></i>
+                        <span>Ayarlar</span>
+                        <small>Pomodoro ayarlarını özelleştirin</small>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timer-card {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.timer-preview {
+    padding: 2rem;
+}
+
+.quick-access-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.quick-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.quick-link-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quick-link-content:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.quick-link-content i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: #2196f3;
+}
+
+.quick-link-content span {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.quick-link-content small {
+    color: #666;
+}
+
+#quickTimer {
+    font-weight: 300;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timer-controls {
+    margin-bottom: 1rem;
+}
+
+.timer-settings {
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+.timer-settings input {
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    text-align: center;
+}
+
+.timer-settings input:focus {
+    background: rgba(255,255,255,0.3);
+    border-color: white;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .quick-access-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+let timerInterval;
+let timeLeft = 25 * 60;
+let isRunning = false;
+
+function updateDisplay() {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    document.getElementById('quickTimer').textContent = 
+        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function playSound() {
+    try {
+        // 3 saniyelik bir ses dizisi oluştur
+        const beepSequence = () => {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            
+            // Daha yüksek ve belirgin ses
+            oscillator.frequency.value = 800;
+            gain.gain.value = 0.3;
+            
+            // Ses dizisi: Uzun-Kısa-Uzun şeklinde
+            oscillator.start();
+            
+            // Ses dalgalanması için gain değerini değiştir
+            setTimeout(() => { gain.gain.value = 0.1; }, 300);
+            setTimeout(() => { gain.gain.value = 0.3; }, 600);
+            setTimeout(() => { gain.gain.value = 0.1; }, 900);
+            setTimeout(() => { gain.gain.value = 0.3; }, 1200);
+            setTimeout(() => { gain.gain.value = 0.1; }, 1500);
+            setTimeout(() => { gain.gain.value = 0.3; }, 1800);
+            
+            // 3 saniye sonra durdur
+            setTimeout(() => {
+                gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                setTimeout(() => oscillator.stop(), 500);
+            }, 3000);
+        };
+
+        beepSequence();
+    } catch (err) {
+        console.error('Ses çalma hatası:', err);
+    }
+}
+
+function toggleTimer() {
+    const btn = document.getElementById('startStopBtn');
+    if (isRunning) {
+        clearInterval(timerInterval);
+        btn.innerHTML = '<i class="fas fa-play me-2"></i>Başlat';
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-primary');
+    } else {
+        timerInterval = setInterval(() => {
+            if (timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+            } else {
+                clearInterval(timerInterval);
+                isRunning = false;
+                btn.innerHTML = '<i class="fas fa-play me-2"></i>Başlat';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-primary');
+                
+                // Önce sesi çal
+                playSound();
+                
+                // Biraz gecikmeyle alert göster
+                setTimeout(() => {
+                    alert('Süre doldu!');
+                }, 1000);
+            }
+        }, 1000);
+        btn.innerHTML = '<i class="fas fa-pause me-2"></i>Duraklat';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-danger');
+    }
+    isRunning = !isRunning;
+}
+
+function resetTimer() {
+    clearInterval(timerInterval);
+    timeLeft = parseInt(document.getElementById('customMinutes').value) * 60;
+    isRunning = false;
+    updateDisplay();
+    const btn = document.getElementById('startStopBtn');
+    btn.innerHTML = '<i class="fas fa-play me-2"></i>Başlat';
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-primary');
+}
+
+function updateCustomTime() {
+    const input = document.getElementById('customMinutes');
+    let value = parseInt(input.value);
+    if (value < 1) value = 1;
+    if (value > 60) value = 60;
+    input.value = value;
+    if (!isRunning) {
+        timeLeft = value * 60;
+        updateDisplay();
+    }
+}
+
+// Sayfa yüklendiğinde
+document.addEventListener('DOMContentLoaded', () => {
+    updateDisplay();
+});
+</script>
+{% endblock %}

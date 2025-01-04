@@ -1,0 +1,698 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="tasks-container">
+    <div class="row">
+        <!-- Sol taraf: Görev Ekleme -->
+        <div class="col-md-4">
+            <div class="task-form-container">
+                <h2>Yeni Görev</h2>
+                <form id="taskForm">
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="taskTitle" 
+                               placeholder="Görev başlığı" required>
+                    </div>
+                    <div class="mb-3">
+                        <textarea class="form-control" id="taskDescription" 
+                                  placeholder="Görev açıklaması" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <select class="form-select" id="taskPriority">
+                            <option value="low">Düşük Öncelik</option>
+                            <option value="medium" selected>Orta Öncelik</option>
+                            <option value="high">Yüksek Öncelik</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-plus"></i> Görev Ekle
+                    </button>
+                </form>
+                <div class="button-guide mb-3">
+                    <small class="text-muted d-block mb-2">Buton Açıklamaları:</small>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <span><i class="fas fa-chart-bar text-info"></i> İstatistikler: Görevin çalışma geçmişi</span>
+                        <span><i class="fas fa-clock text-primary"></i> Pomodoro: Zamanlayıcı başlat</span>
+                        <span>
+                            <i class="fas fa-check text-success"></i> Tamamla/Geri Al 
+                            <small class="color-hint bg-success"></small>
+                        </span>
+                        <span>
+                            <i class="fas fa-times text-danger"></i> Sil 
+                            <small class="color-hint bg-danger"></small>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ taraf: Görev Listesi -->
+        <div class="col-md-8">
+            <div class="tasks-list-container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Görevlerim</h2>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-secondary active" data-filter="all">Tümü</button>
+                        <button class="btn btn-outline-secondary" data-filter="active">Aktif</button>
+                        <button class="btn btn-outline-secondary" data-filter="completed">Tamamlanan</button>
+                    </div>
+                </div>
+
+                <div id="tasksList" class="tasks-list">
+                    <!-- Görevler JavaScript ile buraya eklenecek -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal ekleyelim -->
+<div class="modal fade" id="taskDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTaskTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <canvas id="sessionChart" style="height: 300px;"></canvas>
+                <div id="noDataMessage" style="display: none; text-align: center; padding: 20px;">
+                    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Henüz hiç pomodoro oturumu yok.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js kütüphanesini ekleyin -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const taskForm = document.getElementById('taskForm');
+    const tasksList = document.getElementById('tasksList');
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+    // Görevleri yükle
+    function loadTasks(filter = 'all') {
+        tasksList.innerHTML = '';
+        const filteredTasks = tasks.filter(task => {
+            if (filter === 'all') return true;
+            if (filter === 'active') return !task.completed;
+            if (filter === 'completed') return task.completed;
+        });
+
+        if (filteredTasks.length === 0) {
+            tasksList.innerHTML = `
+                <div class="no-tasks">
+                    <i class="fas fa-clipboard-list fa-2x mb-3"></i>
+                    <p>${getEmptyMessage(filter)}</p>
+                </div>
+            `;
+        } else {
+            filteredTasks.forEach((task, index) => {
+                const taskElement = createTaskElement(task, tasks.indexOf(task));
+                tasksList.appendChild(taskElement);
+            });
+        }
+        saveTasks();
+    }
+
+    // Görev elementi oluştur
+    function createTaskElement(task, index) {
+        const div = document.createElement('div');
+        div.className = `task-item ${task.completed ? 'completed' : ''}`;
+        div.setAttribute('data-priority', task.priority);
+        
+        div.innerHTML = `
+            <div class="task-content">
+                <div class="task-header">
+                    <h3>${task.title}</h3>
+                    <div class="task-actions">
+                        <button class="btn btn-info btn-sm text-button" onclick="showTaskStats(event, ${index})" 
+                                title="İstatistikleri Göster">
+                            <i class="fas fa-chart-bar"></i>
+                            İstatistikler
+                        </button>
+                        <button class="btn btn-primary btn-sm text-button" onclick="startTaskPomodoro(${index})" 
+                                title="Bu görev için pomodoro başlat">
+                            <i class="fas fa-clock"></i>
+                            Pomodoro
+                        </button>
+                        <button class="btn btn-success btn-sm icon-button" onclick="toggleTask(${index})" 
+                                title="${task.completed ? 'Görevi Geri Al' : 'Görevi Tamamla'}">
+                            <i class="fas ${task.completed ? 'fa-undo' : 'fa-check'}"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm icon-button" onclick="deleteTask(${index})"
+                                title="Görevi Sil">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <p class="task-description">${task.description || 'Açıklama yok'}</p>
+                <div class="task-footer">
+                    <div class="task-stats">
+                        <span class="priority-badge ${task.priority}">
+                            ${task.priority === 'low' ? 'Düşük' : 
+                              task.priority === 'medium' ? 'Orta' : 'Yüksek'} Öncelik
+                        </span>
+                        <span class="pomodoro-stats">
+                            <i class="fas fa-clock"></i>
+                            ${task.pomodoros || 0} Pomodoro
+                            (${formatTime(task.totalSeconds || 0)})
+                        </span>
+                    </div>
+                    <small class="text-muted">Oluşturulma: ${task.created}</small>
+                </div>
+            </div>
+        `;
+        return div;
+    }
+
+    // Görev ekle
+    taskForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const task = {
+            title: document.getElementById('taskTitle').value,
+            description: document.getElementById('taskDescription').value,
+            priority: document.getElementById('taskPriority').value,
+            completed: false,
+            created: new Date().toLocaleDateString('tr-TR'),
+            pomodoros: 0,
+            pomodoroMinutes: 0,
+            sessions: [], // Çalışma oturumlarını tutacak
+            totalSeconds: 0 // Toplam çalışma süresi (saniye)
+        };
+        tasks.unshift(task);
+        loadTasks();
+        taskForm.reset();
+    });
+
+    // Görev durumunu değiştir
+    window.toggleTask = function(index) {
+        tasks[index].completed = !tasks[index].completed;
+        loadTasks();
+    };
+
+    // Görevi sil
+    window.deleteTask = function(index) {
+        if (confirm('Bu görevi silmek istediğinizden emin misiniz?')) {
+            const currentFilter = document.querySelector('[data-filter].active').dataset.filter;
+            tasks.splice(index, 1);
+            loadTasks(currentFilter); // Mevcut filtreyi koru
+        }
+    };
+
+    // Filtreleme
+    document.querySelectorAll('[data-filter]').forEach(button => {
+        button.addEventListener('click', function() {
+            document.querySelector('[data-filter].active').classList.remove('active');
+            this.classList.add('active');
+            loadTasks(this.dataset.filter);
+        });
+    });
+
+    // Görevleri kaydet
+    function saveTasks() {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    // İlk yükleme
+    loadTasks();
+
+    // Boş durum mesajları için yeni fonksiyon
+    function getEmptyMessage(filter) {
+        switch(filter) {
+            case 'active':
+                return 'Aktif görev bulunmuyor. Yeni bir görev ekleyin!';
+            case 'completed':
+                return 'Tamamlanmış görev bulunmuyor. Önce bazı görevleri tamamlayın!';
+            default:
+                return 'Henüz hiç görev eklenmemiş. Yeni bir görev ekleyin!';
+        }
+    }
+
+    // Pomodoro başlatma fonksiyonu
+    window.startTaskPomodoro = function(index) {
+        const task = tasks[index];
+        // Timer sayfasına yönlendir ve görevi localStorage'a kaydet
+        localStorage.setItem('activeTask', JSON.stringify({
+            index: index,
+            title: task.title
+        }));
+        window.location.href = '/timer';
+    };
+
+    // İstatistik gösterme fonksiyonunu düzelt
+    window.showTaskStats = function(event, index) {
+        event.preventDefault(); // Sayfa yenilenmesini engelle
+        event.stopPropagation(); // Olay yayılımını durdur
+        
+        const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        const task = tasks[index];
+        
+        if (!task) return;
+        
+        // Chart.js'yi kontrol et
+        if (typeof Chart === 'undefined') {
+            // Chart.js yüklü değilse yükle
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+            script.onload = function() {
+                showChart(task);
+            };
+            document.head.appendChild(script);
+        } else {
+            showChart(task);
+        }
+    };
+
+    // Grafik gösterme fonksiyonu
+    function showChart(task) {
+        const modal = new bootstrap.Modal(document.getElementById('taskDetailModal'));
+        document.getElementById('modalTaskTitle').textContent = `${task.title} - İstatistikler`;
+        
+        const sessions = task.sessions || [];
+        const ctx = document.getElementById('sessionChart');
+        
+        if (window.taskChart) {
+            window.taskChart.destroy();
+        }
+        
+        const recentSessions = sessions.slice(0, 7).reverse();
+        
+        if (recentSessions.length === 0) {
+            document.getElementById('sessionChart').style.display = 'none';
+            document.getElementById('noDataMessage').style.display = 'block';
+        } else {
+            document.getElementById('sessionChart').style.display = 'block';
+            document.getElementById('noDataMessage').style.display = 'none';
+            
+            window.taskChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: recentSessions.map(s => new Date(s.startTime).toLocaleTimeString('tr-TR')),
+                    datasets: [{
+                        label: 'Çalışma Süresi (dk)',
+                        data: recentSessions.map(s => Math.round(s.duration / 60)),
+                        backgroundColor: '#0d6efd',
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Son 7 Oturum'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Dakika'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        modal.show();
+    }
+
+    // Süre formatla
+    function formatTime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        let result = [];
+        if (hours > 0) result.push(`${hours} saat`);
+        if (minutes > 0) result.push(`${minutes} dakika`);
+        if (secs > 0) result.push(`${secs} saniye`);
+        
+        return result.join(' ') || '0 saniye';
+    }
+});
+</script>
+
+<style>
+.tasks-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.task-form-container {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+}
+
+.tasks-list-container {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    min-height: 500px;
+}
+
+.task-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: transform 0.2s;
+}
+
+.task-item:hover {
+    transform: translateY(-2px);
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 10px;
+}
+
+.task-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.task-description {
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.task-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.priority-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.priority-badge.low {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.priority-badge.medium {
+    background: #fff3cd;
+    color: #664d03;
+}
+
+.priority-badge.high {
+    background: #f8d7da;
+    color: #842029;
+}
+
+/* Buton container */
+.task-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Yazılı butonlar (İstatistikler ve Pomodoro) */
+.text-button {
+    padding: 6px 12px !important;
+    height: auto !important;
+    width: auto !important;
+}
+
+.text-button i {
+    margin-right: 5px;
+}
+
+/* İkon butonlar (Tamamla ve Sil) */
+.icon-button {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-button i {
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Hover efektleri */
+.task-actions .btn {
+    transition: all 0.2s ease;
+}
+
+.task-actions .btn:hover {
+    transform: translateY(-2px);
+}
+
+/* İstatistikler butonu */
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+    color: white;
+}
+
+/* Buton boyutları ve kenar yuvarlaklığı */
+.task-actions .btn {
+    border-radius: 4px;
+    margin: 0;
+}
+
+.task-item.completed {
+    opacity: 0.8;
+    background: #e9ecef;
+}
+
+.task-item.completed .task-content h3,
+.task-item.completed .task-description {
+    text-decoration: line-through;
+    color: #6c757d;
+}
+
+.no-tasks {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.no-tasks i {
+    color: #adb5bd;
+    margin-bottom: 15px;
+}
+
+.no-tasks p {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Modal stilleri */
+.stats-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    height: 100%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.session-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.session-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.session-item:last-child {
+    border-bottom: none;
+}
+
+.session-time {
+    color: #666;
+}
+
+.session-duration {
+    font-weight: bold;
+    color: #0d6efd;
+}
+
+/* Görev kartı hover efekti */
+.task-item {
+    cursor: pointer;
+}
+
+.task-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.task-actions button {
+    z-index: 1;
+}
+
+.pomodoro-stats {
+    background: #e3f2fd;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #0d47a1;
+    margin-left: 10px;
+}
+
+.pomodoro-stats i {
+    margin-right: 5px;
+}
+
+/* Yeni stiller */
+#sessionChart {
+    height: 300px !important;
+    width: 100%;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.stats-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    height: 100%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.task-content {
+    cursor: pointer;
+    padding: 15px;
+}
+
+.task-actions {
+    z-index: 10;
+}
+
+.task-actions button {
+    position: relative;
+    z-index: 20;
+}
+
+.task-actions .btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+}
+
+.task-actions .btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+    color: white;
+}
+
+#noDataMessage {
+    text-align: center;
+}
+
+#noDataMessage i {
+    display: block;
+    margin-bottom: 15px;
+}
+
+.button-info-box {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.button-explanations {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.explanation-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.explanation-item span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.color-box {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+/* Deaktif butonlar için stil */
+.button-info-box .btn:disabled {
+    opacity: 1;
+    cursor: default;
+}
+
+.button-info-box .icon-button {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.button-guide {
+    font-size: 0.9rem;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.button-guide span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.color-hint {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    display: inline-block;
+}
+</style>
+{% endblock %}

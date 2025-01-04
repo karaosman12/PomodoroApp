@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center">
+    <h1 class="mb-4">Pomodoro Zamanlayıcı</h1>
+    
+    <div class="timer-container">
+        <div class="display-1 mb-4" id="timer">25:00</div>
+        
+        <div class="custom-time mb-4">
+            <div class="input-group">
+                <input type="number" class="form-control form-control-lg" id="customTime" 
+                       min="1" max="180" value="25" placeholder="Dakika">
+                <button class="btn btn-secondary btn-lg" id="setCustomTime">Ayarla</button>
+            </div>
+            <small class="text-muted mt-2 d-block">1-180 dakika arası süre girebilirsiniz</small>
+        </div>
+
+        <div class="btn-group mb-4">
+            <button class="btn btn-primary btn-lg" id="startBtn">
+                <i class="fas fa-play"></i> Başlat
+            </button>
+            <button class="btn btn-warning btn-lg" id="pauseBtn">
+                <i class="fas fa-pause"></i> Duraklat
+            </button>
+            <button class="btn btn-danger btn-lg" id="resetBtn">
+                <i class="fas fa-redo"></i> Sıfırla
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Font Awesome için -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<script>
+let timeLeft = 25 * 60;
+let timerId = null;
+let isRunning = false;
+let sessionStartTime = null;
+let sessionSeconds = 0;
+
+const timerDisplay = document.getElementById('timer');
+const startBtn = document.getElementById('startBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const resetBtn = document.getElementById('resetBtn');
+const customTime = document.getElementById('customTime');
+const setCustomTime = document.getElementById('setCustomTime');
+
+// Bildirim izni isteği
+if (Notification.permission !== 'granted') {
+    Notification.requestPermission();
+}
+
+function showNotification() {
+    if (Notification.permission === 'granted') {
+        const notification = new Notification('Zamanlayıcı', {
+            body: 'Süreniz doldu!',
+            requireInteraction: true // Bildirim manuel kapatılana kadar kalır
+        });
+
+        // Bildirime tıklandığında sayfaya odaklan
+        notification.onclick = function() {
+            window.focus();
+            notification.close();
+        }
+    }
+    
+    // Ses çal
+    const audio = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg');
+    audio.play();
+}
+
+function updateDisplay() {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    // Sekme başlığını güncelle
+    document.title = `(${timerDisplay.textContent}) Pomodoro`;
+}
+
+function startTimer() {
+    if (!isRunning) {
+        isRunning = true;
+        sessionStartTime = new Date();
+        sessionSeconds = 0;
+        
+        timerId = setInterval(() => {
+            timeLeft--;
+            sessionSeconds++;
+            updateDisplay();
+            
+            if (timeLeft === 0) {
+                clearInterval(timerId);
+                isRunning = false;
+                saveSession();
+                showNotification();
+            }
+        }, 1000);
+    }
+}
+
+function pauseTimer() {
+    clearInterval(timerId);
+    isRunning = false;
+}
+
+function resetTimer() {
+    clearInterval(timerId);
+    isRunning = false;
+    timeLeft = parseInt(customTime.value) * 60;
+    updateDisplay();
+}
+
+function setCustomTimer() {
+    const minutes = parseInt(customTime.value);
+    if (minutes > 0 && minutes <= 180) {
+        clearInterval(timerId);
+        isRunning = false;
+        timeLeft = minutes * 60;
+        updateDisplay();
+    } else {
+        alert('Lütfen 1-180 dakika arasında bir süre girin!');
+    }
+}
+
+function saveSession() {
+    const activeTask = JSON.parse(localStorage.getItem('activeTask'));
+    if (activeTask) {
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        const task = tasks[activeTask.index];
+        if (task) {
+            // Oturumu kaydet
+            task.sessions = task.sessions || [];
+            task.sessions.unshift({
+                startTime: sessionStartTime.toISOString(),
+                duration: sessionSeconds
+            });
+            
+            // Toplam süreyi güncelle
+            task.totalSeconds = (task.totalSeconds || 0) + sessionSeconds;
+            
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+    }
+}
+
+startBtn.addEventListener('click', startTimer);
+pauseBtn.addEventListener('click', pauseTimer);
+resetBtn.addEventListener('click', resetTimer);
+setCustomTime.addEventListener('click', setCustomTimer);
+
+// Klavye kısayolları
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        if (isRunning) {
+            pauseTimer();
+        } else {
+            startTimer();
+        }
+    } else if (e.code === 'KeyR') {
+        resetTimer();
+    }
+});
+
+updateDisplay();
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Aktif görevi kontrol et
+    const activeTask = JSON.parse(localStorage.getItem('activeTask'));
+    if (activeTask) {
+        // Aktif görev bilgisini göster
+        const taskInfo = document.createElement('div');
+        taskInfo.className = 'active-task-info';
+        taskInfo.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-tasks"></i>
+                Çalışılan Görev: ${activeTask.title}
+            </div>
+        `;
+        document.querySelector('.timer-container').prepend(taskInfo);
+    }
+
+    // Timer tamamlandığında
+    function onTimerComplete() {
+        if (activeTask) {
+            // Görev istatistiklerini güncelle
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            const task = tasks[activeTask.index];
+            if (task) {
+                task.pomodoros = (task.pomodoros || 0) + 1;
+                task.pomodoroMinutes = (task.pomodoroMinutes || 0) + 25; // veya seçilen süre
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+        }
+        showNotification();
+    }
+
+    // Timer tamamlandığında çağrılan fonksiyonu güncelle
+    if (timeLeft === 0) {
+        clearInterval(timerId);
+        isRunning = false;
+        onTimerComplete();
+    }
+});
+
+// Timer'da istatistiklerin kaydedildiği yeri göster
+console.log("Timer'da kaydedilen değerler:", {
+    minutes: localStorage.getItem('todayMinutes'),
+    pomodoros: localStorage.getItem('todayPomodoros')
+});
+</script>
+
+<style>
+.timer-container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+#timer {
+    font-size: 6rem;
+    font-weight: bold;
+    color: #333;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.btn-group .btn {
+    padding: 12px 24px;
+}
+
+.custom-time {
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.custom-time input {
+    text-align: center;
+    font-size: 1.2rem;
+}
+
+/* Buton hover efektleri */
+.btn-primary:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s;
+}
+
+.btn-warning:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s;
+}
+</style>
+{% endblock %}
