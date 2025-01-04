@@ -1,7 +1,5 @@
 # 🍅 Pomodoro App
 
-![Pomodoro App](screenshots/main.png)
-
 ## 📝 Proje Hakkında
 Bu Pomodoro uygulaması, çalışma ve mola zamanlarınızı etkili bir şekilde yönetmenize yardımcı olan, %100 çevrimdışı çalışan bir masaüstü uygulamasıdır.
 
