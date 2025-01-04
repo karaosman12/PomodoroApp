@@ -1,0 +1,24 @@
+ÖZEL LİSANS
+
+Copyright (c) 2024 ShadowCoder
+
+Bu yazılım ve ilişkili dokümantasyon dosyaları ("Yazılım") aşağıdaki koşullarla sınırlıdır:
+
+İZİN VERİLENLER:
+1. Yazılımı kişisel kullanım için çalıştırma
+2. Eğitim amaçlı kod incelemesi
+3. Kod yapısını öğrenme ve anlama
+
+YASAKLAR:
+1. Yazılımın kaynak kodunun kopyalanması
+2. Yazılımın değiştirilmiş versiyonlarının dağıtılması
+3. Yazılımın ticari amaçlı kullanımı
+4. Kodların başka projelerde kullanılması
+5. Yazılımın yeniden dağıtılması
+
+SORUMLULUK REDDİ:
+YAZILIM "OLDUĞU GİBİ" SUNULMUŞTUR, HERHANGİ BİR GARANTİ VERİLMEMEKTEDİR.
+YAZILIMIN KULLANIMINDAN DOĞABİLECEK HERHANGİ BİR ZARARDAN YAZILIMIN 
+GELİŞTİRİCİLERİ SORUMLU TUTULAMAZ.
+
+TÜM HAKLARI SAKLIDIR © 2024 ShadowCoder

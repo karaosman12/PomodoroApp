@@ -59,8 +59,7 @@ Bu proje eğitim amaçlı olarak paylaşılmıştır. Kodların incelenmesi ve �
 - Görev yöneticisinden manuel kapatılması gerekebilir
 
 ## 📞 İletişim
-- GitHub: [Profiliniz]
-- E-posta: [E-posta adresiniz]
+- GitHub: [ShadowCoder]
 
 ## 📜 Lisans
 Bu proje özel lisans altında dağıtılmaktadır. Tüm hakları saklıdır © 2024
