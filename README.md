@@ -115,7 +115,7 @@ Bu proje eğitim amaçlı olarak paylaşılmıştır.
 • AI desteğiyle öğrenerek geliştirdiğim bir zaman yönetimi uygulamasıdır.
 
 
-• GitHub: [ShadowCoder]
+• GitHub: [karaosman12]
 • Sorun bildirimi için GitHub Issues kullanın
 
 ## 📜 Lisans
