@@ -120,7 +120,7 @@ Bu proje eğitim amaçlı olarak paylaşılmıştır.
 
 ## 📜 Lisans
 Bu proje özel lisans altında dağıtılmaktadır. Detaylar için LICENSE.txt dosyasını okuyunuz.
-Tüm hakları saklıdır © 2024 ShadowCoder
+Tüm hakları saklıdır © 2024 Karaosman 
 
 ---
 ⭐ Beğendiyseniz yıldız vermeyi unutmayın!
