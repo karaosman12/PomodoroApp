@@ -3,7 +3,7 @@
 ## 📝 Proje Hakkında
 Bu Pomodoro uygulaması, çalışma ve mola zamanlarınızı etkili bir şekilde yönetmenize yardımcı olan, %100 çevrimdışı çalışan bir masaüstü uygulamasıdır.
 
-Geliştirici: ShadowCoder
+Geliştirici: Karaosman 
 Versiyon: 1.0.0 (2024)
 
 ### ⚠️ ÖNEMLİ UYARI
@@ -112,8 +112,9 @@ Bu proje eğitim amaçlı olarak paylaşılmıştır.
 • Kodların incelenmesi ve öğrenme amaçlı kullanımı serbesttir
 • Kaynak kodları sadece eğitim amaçlı incelenebilir
 • Kendi versiyonunuzu GELİŞTİREBİLİR fakat DAĞITAMAZSINIZ
+• AI desteğiyle öğrenerek geliştirdiğim bir zaman yönetimi uygulamasıdır.
 
-## 📞 İletişim
+
 • GitHub: [ShadowCoder]
 • Sorun bildirimi için GitHub Issues kullanın
 
